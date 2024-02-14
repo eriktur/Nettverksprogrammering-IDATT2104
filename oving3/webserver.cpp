@@ -30,8 +30,8 @@ int main() {
 
     std::string response = "HTTP/1.0 200 OK\nContent-Type: text/html; charset=utf-8\n\n";
     response += "<HTML><BODY>";
-    response += "<H1>Hilsen. Du har koblet deg opp til min enkle web-tjener</H1>";
-    response += "Header fra klient er:<UL>";
+    response += "<H1>HELLO! You have connected to my simple web-server:)</H1>";
+    response += "<h3>Header from clients is:</h3><UL>";
 
     std::istringstream requestHeaders(buffer);
     std::string line;

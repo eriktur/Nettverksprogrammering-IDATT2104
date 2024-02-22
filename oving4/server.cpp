@@ -1,75 +1,82 @@
-
 #include <iostream>
-#include <netinet/in.h>
-#include <string.h>
+#include <string>
+#include <sstream>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
+#include <arpa/inet.h>
 
-#define PORT 8080
+void handle_client(const std::string& message, struct sockaddr_in client_addr, int server_socket) {
+    char operation;
+    int num1, num2, result = 0;
+    std::istringstream ss(message);
+    ss >> operation >> num1 >> num2;
 
-void* handleClient(void* socket_desc) {
-    int sock = *(int*)socket_desc;
-    free(socket_desc);
-    char buffer[1024] = {0};
-    char result[1024];
-    int valread;
-
-    while(true) {
-        memset(buffer, 0, sizeof(buffer));
-        valread = read(sock, buffer, sizeof(buffer));
-        if (strcmp(buffer, "q") == 0 || valread == 0) {
-            printf("Forbindelse avsluttet av klienten.\n");
+    std::string response;
+    switch (operation) {
+        case '+':
+            result = num1 + num2;
+            response = "" + std::to_string(result);
             break;
-        }
-
-        int tall1, tall2;
-        char operasjon;
-        sscanf(buffer, "%d %c %d", &tall1, &operasjon, &tall2);
-
-        int resultat = (operasjon == '+') ? (tall1 + tall2) : (tall1 - tall2);
-        snprintf(result, sizeof(result), "%d", resultat);
-        send(sock, result, strlen(result), 0);
+        case '-':
+            result = num1 - num2;
+            response = "" + std::to_string(result);
+            break;
+        case '*':
+            result = num1 * num2;
+            response = "" + std::to_string(result);
+            break;
+        case '/':
+            if (num2 == 0) {
+                response = "Error: Division by zero";
+            } else {
+                result = num1 / num2;
+                response = "" + std::to_string(result);
+            }
+            break;
+        default:
+            response = "Error: Invalid operation";
+            break;
     }
 
-    close(sock);
-    return nullptr;
+    sendto(server_socket, response.c_str(), response.length(), 0, (struct sockaddr*)&client_addr, sizeof(client_addr));
 }
 
 int main() {
-    int server_fd, new_socket;
-    struct sockaddr_in address;
-    int opt = 1;
-    int addrlen = sizeof(address);
-
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
-
-    bind(server_fd, (struct sockaddr *)&address, sizeof(address));
-    listen(server_fd, 3);
-
-    while(true) {
-        printf("Venter på ny forbindelse...\n");
-        new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
-        if (new_socket < 0) {
-            perror("accept");
-            continue;
-        }
-        printf("Forbindelse etablert.\n");
-
-        int* new_sock = new int(new_socket);
-
-        pthread_t thread;
-        if (pthread_create(&thread, nullptr, handleClient, (void*)new_sock) != 0) {
-            perror("could not create thread");
-        }
-        pthread_detach(thread); // Detach tråden slik at ressurser frigjøres når den avsluttes
+    int server_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (server_socket == -1) {
+        std::cerr << "Socket creation failed" << std::endl;
+        return -1;
     }
 
-    close(server_fd);
+    struct sockaddr_in server_addr;
+    int port = 9000;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(port);
+
+    if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        std::cerr << "Bind failed" << std::endl;
+        close(server_socket);
+        return -1;
+    }
+
+    std::cout << "Server listening on port " << port << std::endl;
+
+    char buffer[1024];
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_size = sizeof(client_addr);
+
+    while (true) {
+        memset(buffer, 0, sizeof(buffer));
+        int bytes_received = recvfrom(server_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&client_addr, &client_addr_size);
+        if (bytes_received == -1) {
+            std::cerr << "Error in recvfrom" << std::endl;
+            continue;
+        }
+
+        std::string message(buffer, bytes_received);
+        handle_client(message, client_addr, server_socket);
+    }
+
+    close(server_socket);
     return 0;
 }

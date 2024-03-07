@@ -1,0 +1,41 @@
+
+body {
+    font-family: Arial, sans-serif;
+    display: grid;
+    background-color: #373737;
+    text-align: center;
+    margin-top: 60px;
+}
+#app{
+    color: #ffffff;
+    font-size: 40px;
+    text-align: center;
+}
+.overskrift{
+    font-size: 50px;
+    color: #ffffff;
+}
+#run-btn{
+    padding:10px 20px 10px 20px;
+    border-radius: 10px;
+    border: 0;
+}
+#run-btn:active{
+    background-color: rgb(128, 128, 128);
+    color:#ffffff;
+}
+#input{
+    background-color: white;
+    font-size: 15px;
+    color:#000000;
+    margin: 2% 20% 0 20%;
+    border-radius: 20px;
+    padding: 5px
+}
+#output{
+    background-color: white;
+    font-size: 15px;
+    color:#000000;
+    margin: 2% 20% 0 20%;
+    border-radius: 20px;
+}

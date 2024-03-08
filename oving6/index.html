@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <title>TihiChat</title>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const messages = document.getElementById('messages');
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+
+            let ws = new WebSocket('ws://localhost:3001');
+
+            ws.onopen = () => {
+                console.log('Forbindelsen er åpen');
+            };
+
+            ws.onmessage = event => {
+                console.log('Melding mottatt: ', event.data);
+                const msg = document.createElement('p');
+                msg.textContent = event.data;
+                messages.appendChild(msg);
+            };
+
+            ws.onclose = () => {
+                console.log('Forbindelsen er lukket');
+            };
+
+            sendButton.addEventListener('click', () => {
+                const message = messageInput.value;
+                ws.send(message);
+                messageInput.value = ''; // Tøm inputfeltet etter sending
+            });
+        });
+    </script>
+</head>
+<body>
+<h1>TihiChat😊</h1>
+<div id="messages"></div>
+<input type="text" id="messageInput" placeholder="Skriv en melding">
+<button id="sendButton">Send</button>
+</body>
+</html>
